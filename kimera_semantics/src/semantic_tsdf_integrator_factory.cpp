@@ -50,11 +50,14 @@ SemanticTsdfIntegratorFactory::create(
   CHECK(!integrator_type_name.empty());
 
   int integrator_type = 0;
-  for (const std::string& valid_integrator_type_name :
-       kSemanticTsdfIntegratorTypeNames) {
+  for (const std::string& valid_integrator_type_name :  kSemanticTsdfIntegratorTypeNames) {
     if (integrator_type_name == valid_integrator_type_name) {
+      //搜索 SemanticTsdfIntegratorFactory::create(入口
       return create(static_cast<SemanticTsdfIntegratorType>(integrator_type),
-                    config, semantic_config, tsdf_layer, semantic_layer);
+                    config, 
+                    semantic_config, 
+                    tsdf_layer, //從
+                    semantic_layer);
     }
     ++integrator_type;
   }
@@ -62,6 +65,7 @@ SemanticTsdfIntegratorFactory::create(
   return nullptr;
 }
 
+//SemanticTsdfIntegratorFactory::create(入口
 std::unique_ptr<vxb::TsdfIntegratorBase>
 SemanticTsdfIntegratorFactory::create(
     const SemanticTsdfIntegratorType& integrator_type,

@@ -53,6 +53,8 @@ enum class SemanticTsdfIntegratorType : int {
 const std::array<std::string, 2>
 kSemanticTsdfIntegratorTypeNames = {{/*kMerged*/ "merged", /*kFast*/ "fast"}};
 
+
+
 /// Creates a Semantic/TSDF integrator of the desired type.
 class SemanticTsdfIntegratorFactory {
 public:

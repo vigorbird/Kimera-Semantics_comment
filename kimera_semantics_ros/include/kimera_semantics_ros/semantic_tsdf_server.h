@@ -44,6 +44,7 @@
 
 namespace kimera {
 
+//严重依赖voxblox的子类
 class SemanticTsdfServer : public vxb::TsdfServer {
  public:
   SemanticTsdfServer(const ros::NodeHandle& nh,

@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
   ros::NodeHandle nh;
   ros::NodeHandle nh_private("~");
 
-  kimera::SemanticTsdfServer node(nh, nh_private);
+  kimera::SemanticTsdfServer node(nh, nh_private);//非常重要的声明函数！！！！
 
   ros::spin();
 
