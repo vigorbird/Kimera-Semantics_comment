@@ -47,7 +47,7 @@ namespace kimera {
 
 //! Implemented types of semantic integrators.
 enum class SemanticTsdfIntegratorType : int {
-  kMerged = 0,
+  kMerged = 0,//这种模式远远慢于kFast模式，而且kFast模式和KMerged模式相比效果完全相同
   kFast = 1,
 };
 const std::array<std::string, 2>

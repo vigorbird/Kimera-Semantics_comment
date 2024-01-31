@@ -56,8 +56,8 @@ SemanticTsdfIntegratorFactory::create(
       return create(static_cast<SemanticTsdfIntegratorType>(integrator_type),
                     config, 
                     semantic_config, 
-                    tsdf_layer, //從
-                    semantic_layer);
+                    tsdf_layer, //从外部传入的类指针
+                    semantic_layer);//从外部传入的类指针
     }
     ++integrator_type;
   }
@@ -67,26 +67,31 @@ SemanticTsdfIntegratorFactory::create(
 
 //SemanticTsdfIntegratorFactory::create(入口
 std::unique_ptr<vxb::TsdfIntegratorBase>
-SemanticTsdfIntegratorFactory::create(
-    const SemanticTsdfIntegratorType& integrator_type,
-    const vxb::TsdfIntegratorBase::Config& config,
-    const SemanticIntegratorBase::SemanticConfig& semantic_config,
-    vxb::Layer<vxb::TsdfVoxel>* tsdf_layer,
-    vxb::Layer<SemanticVoxel>* semantic_layer) {
+SemanticTsdfIntegratorFactory::create(const SemanticTsdfIntegratorType& integrator_type,
+                                      const vxb::TsdfIntegratorBase::Config& config,
+                                      const SemanticIntegratorBase::SemanticConfig& semantic_config,
+                                      vxb::Layer<vxb::TsdfVoxel>* tsdf_layer,
+                                      vxb::Layer<SemanticVoxel>* semantic_layer) {
   CHECK_NOTNULL(tsdf_layer);
   switch (integrator_type) {
-  case SemanticTsdfIntegratorType::kFast:
-    return kimera::make_unique<FastSemanticTsdfIntegrator>(
-          config, semantic_config, tsdf_layer, semantic_layer);
-    break;
-  case SemanticTsdfIntegratorType::kMerged:
-    return kimera::make_unique<MergedSemanticTsdfIntegrator>(
-          config, semantic_config, tsdf_layer, semantic_layer);
-    break;
-  default:
-    LOG(FATAL) << "Unknown Semantic/TSDF integrator type: "
-               << static_cast<int>(integrator_type);
-    break;
+    //默认会使用这种模式
+    case SemanticTsdfIntegratorType::kFast:
+      //
+      return kimera::make_unique<FastSemanticTsdfIntegrator>( config, 
+                                                              semantic_config, 
+                                                              tsdf_layer, 
+                                                              semantic_layer);
+      break;
+    case SemanticTsdfIntegratorType::kMerged:
+      return kimera::make_unique<MergedSemanticTsdfIntegrator>( config, 
+                                                                semantic_config, 
+                                                                tsdf_layer, 
+                                                                semantic_layer);
+      break;
+    default:
+      LOG(FATAL) << "Unknown Semantic/TSDF integrator type: "
+                << static_cast<int>(integrator_type);
+      break;
   }
   return nullptr;
 }
