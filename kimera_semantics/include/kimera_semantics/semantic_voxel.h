@@ -18,9 +18,8 @@ struct SemanticVoxel {
   // Initialize voxel to uniform probability.
   // Use log odds! So uniform ditribution of 1/kTotalNumberOfLabels,
   // should be std::log(1/kTotalNumberOfLabels)
-  SemanticProbabilities semantic_priors =
-      // SemanticProbabilities::Constant(std::log(1 / kTotalNumberOfLabels));
-      SemanticProbabilities::Constant(-0.60205999132);
+  //matrix<float,21,1> = SemanticProbabilities
+  SemanticProbabilities semantic_priors = SemanticProbabilities::Constant(-0.60205999132);// SemanticProbabilities::Constant(std::log(1 / kTotalNumberOfLabels));
   // Initialize voxel with gray color
   // Make sure that all color maps agree on semantic label 0u -> gray
   HashableColor color = HashableColor::Gray();

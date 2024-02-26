@@ -25,14 +25,11 @@ static constexpr uint8_t kUnknownSemanticLabelId = 0u;
 // compile time...
 static constexpr size_t kTotalNumberOfLabels = 21;
 typedef vxb::FloatingPoint SemanticProbability;
-typedef Eigen::Matrix<SemanticProbability, kTotalNumberOfLabels, 1>
-    SemanticProbabilities;
+typedef Eigen::Matrix<SemanticProbability, kTotalNumberOfLabels, 1> SemanticProbabilities;//等价于 matrix<float,21,1>
 // A `#Labels X #Labels` Eigen matrix where each `j` column represents the
 // probability of observing label `j` when current label is `i`, where `i`
 // is the row index of the matrix.
-typedef Eigen::
-    Matrix<SemanticProbability, kTotalNumberOfLabels, kTotalNumberOfLabels>
-        SemanticLikelihoodFunction;
+typedef Eigen::Matrix<SemanticProbability, kTotalNumberOfLabels, kTotalNumberOfLabels> SemanticLikelihoodFunction;//等价于 matrix<float, 21, 21>
 
 typedef vxb::LongIndexHashMapType<vxb::AlignedVector<size_t>>::type VoxelMap;
 typedef VoxelMap::value_type VoxelMapElement;

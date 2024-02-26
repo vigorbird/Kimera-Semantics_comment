@@ -70,9 +70,10 @@ SemanticIntegratorBase::SemanticIntegratorBase(
       semantic_voxel_size_inv_(),
       semantic_voxels_per_side_inv_(),
       semantic_block_size_inv_() {
+
   setSemanticLayer(semantic_layer);
   CHECK_NOTNULL(semantic_layer_);
-  setSemanticProbabilities();
+  setSemanticProbabilities();//比较重要的函数 会设置一些重要参数！！！！
 }
 
 void SemanticIntegratorBase::setSemanticLayer(
@@ -91,10 +92,9 @@ void SemanticIntegratorBase::setSemanticLayer(
 }
 
 void SemanticIntegratorBase::setSemanticProbabilities() {
-  SemanticProbability match_probability =
-      semantic_config_.semantic_measurement_probability_;
-  SemanticProbability non_match_probability =
-      1.0f - semantic_config_.semantic_measurement_probability_;
+
+  SemanticProbability match_probability = semantic_config_.semantic_measurement_probability_;
+  SemanticProbability non_match_probability = 1.0f - semantic_config_.semantic_measurement_probability_;
   CHECK_GT(match_probability, 0.0);
   CHECK_GT(non_match_probability, 0.0);
   CHECK_LT(match_probability, 1.0);
@@ -105,10 +105,10 @@ void SemanticIntegratorBase::setSemanticProbabilities() {
       << "Your probabilities do not make sense... The likelihood of a "
          "label, knowing that we have measured that label, should not be"
          "smaller than the likelihood of seeing another label!";
-  semantic_log_likelihood_ =
-      semantic_log_likelihood_.Constant(log_non_match_probability_);
-  semantic_log_likelihood_.diagonal() =
-      semantic_log_likelihood_.diagonal().Constant(log_match_probability_);
+
+  //semantic_log_likelihood_ = matrix<float, 21, 21>       
+  semantic_log_likelihood_ =  semantic_log_likelihood_.Constant(log_non_match_probability_);//log(1-0.9)
+  semantic_log_likelihood_.diagonal() = semantic_log_likelihood_.diagonal().Constant(log_match_probability_);//0.9
   // TODO(Toni): sanity checks, set as DCHECK_EQ.
   CHECK_NEAR(semantic_log_likelihood_.diagonal().sum(),
              kTotalNumberOfLabels * log_match_probability_,
@@ -124,7 +124,7 @@ void SemanticIntegratorBase::setSemanticProbabilities() {
   // Log(0) is -inf.
   // Well, now, rather, we give uniform weight, saying that we don't know what
   // is what.
-  semantic_log_likelihood_.col(kUnknownSemanticLabelId).setZero();
+  semantic_log_likelihood_.col(kUnknownSemanticLabelId).setZero();//0列全部设置为
 }
 
 // TODO(Toni): Complete this function!!
@@ -133,12 +133,14 @@ SemanticProbability SemanticIntegratorBase::computeMeasurementProbability(
   return 1.0;
 }
 
-void SemanticIntegratorBase::updateSemanticVoxel(
-    const vxb::GlobalIndex& global_voxel_idx,
-    const SemanticProbabilities& measurement_frequencies,
-    Mutexes* mutexes,
-    vxb::TsdfVoxel* tsdf_voxel,
-    SemanticVoxel* semantic_voxel) {
+//详见算法实现文档
+void SemanticIntegratorBase::updateSemanticVoxel( const vxb::GlobalIndex& global_voxel_idx,
+                                                const SemanticProbabilities& measurement_frequencies,//SemanticProbabilities = matrix<float,16,1>，所属的那个类别等于1 其余全部为0
+                                                Mutexes* mutexes,
+                                                vxb::TsdfVoxel* tsdf_voxel,//这个点对应的voxel指针
+                                                SemanticVoxel* semantic_voxel)//这个点对应的语义voxel指针，语义voxel里面只有一个matrix<float,16,1>概率向量，存储这个voxel属于每个类别的概率
+{
+
   DCHECK(mutexes != nullptr);
   DCHECK(tsdf_voxel != nullptr);
   DCHECK(semantic_voxel != nullptr);
@@ -158,14 +160,17 @@ void SemanticIntegratorBase::updateSemanticVoxel(
   // Don't do it bcs of copyrights... :'(
   ////// Here is the actual logic of Kimera-Semantics:   /////////////////////
   // Calculate new probabilities given the measurement frequencies.
+  //1.根据新的观测更新这个voxel对应的语义先验！
   updateSemanticVoxelProbabilities(measurement_frequencies,
-                                   &semantic_voxel->semantic_priors);
+                                   &semantic_voxel->semantic_priors); 
 
   // Get MLE semantic label.
+  //2.这个voxel中哪个label对应的概率最大， 将这个label保存到semantic_voxel->semantic_label中。
   calculateMaximumLikelihoodLabel(semantic_voxel->semantic_priors,
                                   &semantic_voxel->semantic_label);
 
   // Colorize according to current MLE semantic label.
+  //3.根据label找到对应的颜色并保存到semantic_voxel->color中。
   updateSemanticVoxelColor(semantic_voxel->semantic_label,
                            &semantic_voxel->color);
 
@@ -180,8 +185,8 @@ void SemanticIntegratorBase::updateSemanticVoxel(
       break;
     case ColorMode::kSemanticProbability:
       // TODO(Toni): Might be a bit expensive to calc all these exponentials...
-      tsdf_voxel->color = vxb::rainbowColorMap(std::exp(
-          semantic_voxel->semantic_priors[semantic_voxel->semantic_label]));
+      //将0-1范围的值映射到不同颜色
+      tsdf_voxel->color = vxb::rainbowColorMap(std::exp(semantic_voxel->semantic_priors[semantic_voxel->semantic_label]));
       break;
     default:
       LOG(FATAL) << "Unknown semantic color mode: "
@@ -191,7 +196,7 @@ void SemanticIntegratorBase::updateSemanticVoxel(
   }
   ////////////////////////////////////////////////////////////////////////////
   //}
-}
+}//end function updateSemanticVoxel
 
 // Will return a pointer to a voxel located at global_voxel_idx in the tsdf
 // layer. Thread safe.
@@ -202,15 +207,14 @@ void SemanticIntegratorBase::updateSemanticVoxel(
 // mutex allowing it to grow during integration.
 // These temporary blocks can be merged into the layer later by calling
 // updateLayerWithStoredBlocks()
-SemanticVoxel* SemanticIntegratorBase::allocateStorageAndGetSemanticVoxelPtr(
-    const vxb::GlobalIndex& global_voxel_idx,
-    vxb::Block<SemanticVoxel>::Ptr* last_block,
-    vxb::BlockIndex* last_block_idx) {
+//根据全局的voxel坐标，得到语义对应的block索引和内存地址
+SemanticVoxel* SemanticIntegratorBase::allocateStorageAndGetSemanticVoxelPtr(const vxb::GlobalIndex& global_voxel_idx,//in
+                                                                              vxb::Block<SemanticVoxel>::Ptr* last_block,//output
+                                                                              vxb::BlockIndex* last_block_idx) {//output
   DCHECK(last_block != nullptr);
   DCHECK(last_block_idx != nullptr);
 
-  const vxb::BlockIndex& block_idx = vxb::getBlockIndexFromGlobalVoxelIndex(
-      global_voxel_idx, semantic_voxels_per_side_inv_);
+  const vxb::BlockIndex& block_idx = vxb::getBlockIndexFromGlobalVoxelIndex(global_voxel_idx, semantic_voxels_per_side_inv_);
 
   if ((block_idx != *last_block_idx) || (*last_block == nullptr)) {
     *last_block = semantic_layer_->getBlockPtrByIndex(block_idx);
@@ -224,18 +228,16 @@ SemanticVoxel* SemanticIntegratorBase::allocateStorageAndGetSemanticVoxelPtr(
     // one thread in at once
     std::lock_guard<std::mutex> lock(temp_semantic_block_mutex_);
 
-    typename vxb::Layer<SemanticVoxel>::BlockHashMap::iterator it =
-        temp_semantic_block_map_.find(block_idx);
+    typename vxb::Layer<SemanticVoxel>::BlockHashMap::iterator it = temp_semantic_block_map_.find(block_idx);
     if (it != temp_semantic_block_map_.end()) {
       *last_block = it->second;
     } else {
-      auto insert_status = temp_semantic_block_map_.emplace(
-          block_idx,
-          std::make_shared<vxb::Block<SemanticVoxel>>(
-              semantic_voxels_per_side_,
-              semantic_voxel_size_,
-              vxb::getOriginPointFromGridIndex(block_idx,
-                                               semantic_block_size_)));
+      auto insert_status = temp_semantic_block_map_.emplace( block_idx,
+                                                            std::make_shared<vxb::Block<SemanticVoxel>>(semantic_voxels_per_side_,
+                                                                                                        semantic_voxel_size_,
+                                                                                                        vxb::getOriginPointFromGridIndex(block_idx,
+                                                                                                                                        semantic_block_size_))
+                                                          );
 
       DCHECK(insert_status.second) << "Block already exists when allocating at "
                                    << block_idx.transpose();
@@ -247,18 +249,16 @@ SemanticVoxel* SemanticIntegratorBase::allocateStorageAndGetSemanticVoxelPtr(
   // Only used if someone calls the getAllUpdatedBlocks I believe.
   (*last_block)->updated() = true;
 
-  const vxb::VoxelIndex local_voxel_idx = vxb::getLocalFromGlobalVoxelIndex(
-      global_voxel_idx, semantic_voxels_per_side_);
+  const vxb::VoxelIndex local_voxel_idx = vxb::getLocalFromGlobalVoxelIndex(global_voxel_idx, semantic_voxels_per_side_);
 
   return &((*last_block)->getVoxelByVoxelIndex(local_voxel_idx));
-}
+}//end function allocateStorageAndGetSemanticVoxelPtr
 
 // NOT THREAD SAFE
 void SemanticIntegratorBase::updateSemanticLayerWithStoredBlocks() {
   vxb::BlockIndex last_block_idx;
   vxb::Block<SemanticVoxel>::Ptr block = nullptr;
-  for (const std::pair<const vxb::BlockIndex, vxb::Block<SemanticVoxel>::Ptr>&
-           tmp_label_block_pair : temp_semantic_block_map_) {
+  for (const std::pair<const vxb::BlockIndex, vxb::Block<SemanticVoxel>::Ptr>& tmp_label_block_pair : temp_semantic_block_map_) {
     semantic_layer_->insertBlock(tmp_label_block_pair);
   }
   temp_semantic_block_map_.clear();
@@ -280,9 +280,9 @@ void SemanticIntegratorBase::updateSemanticLayerWithStoredBlocks() {
  * if voxel is close to ground.
  **/
 // TODO(Toni): Unit Test this function!
-void SemanticIntegratorBase::updateSemanticVoxelProbabilities(
-    const SemanticProbabilities& measurement_frequencies,
-    SemanticProbabilities* semantic_prior_probability) const {
+//SemanticProbabilities = 等价于 matrix<float,21,1>
+void SemanticIntegratorBase::updateSemanticVoxelProbabilities(  const SemanticProbabilities& measurement_frequencies,
+                                                                 SemanticProbabilities* semantic_prior_probability) const {
   DCHECK(semantic_prior_probability != nullptr);
   DCHECK_EQ(semantic_prior_probability->size(), kTotalNumberOfLabels);
   DCHECK_LE((*semantic_prior_probability)[0], 0.0);
@@ -303,8 +303,7 @@ void SemanticIntegratorBase::updateSemanticVoxelProbabilities(
   // likelihood matrix with corresponding measurement frequency.
   // B. Compute posterior probabilities:
   // Post_i = (likelihood * meas freqs)_i + prior_i;
-  *semantic_prior_probability +=
-      semantic_log_likelihood_ * measurement_frequencies;
+  *semantic_prior_probability +=  semantic_log_likelihood_ * measurement_frequencies;
   DCHECK(!semantic_prior_probability->hasNaN());
 
   // Normalize posterior probability.
@@ -349,9 +348,8 @@ void SemanticIntegratorBase::normalizeProbabilities(
 }
 
 // THREAD SAFE
-void SemanticIntegratorBase::calculateMaximumLikelihoodLabel(
-    const SemanticProbabilities& semantic_posterior,
-    SemanticLabel* semantic_label) const {
+void SemanticIntegratorBase::calculateMaximumLikelihoodLabel( const SemanticProbabilities& semantic_posterior,
+                                                                 SemanticLabel* semantic_label) const {
   CHECK_NOTNULL(semantic_label);
   // Return semantic label with current max probability.
   // TODO(Toni): what if there is a draw?
@@ -367,16 +365,14 @@ void SemanticIntegratorBase::calculateMaximumLikelihoodLabel(
 }
 
 // THREAD SAFE
-void SemanticIntegratorBase::updateSemanticVoxelColor(
-    const SemanticLabel& semantic_label,
-    HashableColor* semantic_voxel_color) const {
+
+void SemanticIntegratorBase::updateSemanticVoxelColor( const SemanticLabel& semantic_label,
+                                                        HashableColor* semantic_voxel_color) const {
   CHECK_NOTNULL(semantic_voxel_color);
   // Do Not modify semantic_label_color_map_ here bcs we need to remain
   // thread-safe, and adding mutexes for coloring seems silly.
   // Precompute, for all possible SemanticLabels (255) a color.
-  *semantic_voxel_color =
-      semantic_config_.semantic_label_to_color_->getColorFromSemanticLabel(
-          semantic_label);
-}
+  *semantic_voxel_color = semantic_config_.semantic_label_to_color_->getColorFromSemanticLabel(semantic_label);
+}//end function updateSemanticVoxelColor
 
 }  // Namespace kimera

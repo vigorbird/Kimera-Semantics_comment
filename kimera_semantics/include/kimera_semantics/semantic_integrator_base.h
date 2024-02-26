@@ -210,6 +210,7 @@ class SemanticIntegratorBase {
   // A `#Labels X #Labels` Eigen matrix where each `j` column represents the
   // probability of observing label `j` when current label is `i`, where `i`
   // is the row index of the matrix.
+  //SemanticLikelihoodFunction 等价于 matrix<float, 21, 21>
   SemanticLikelihoodFunction semantic_log_likelihood_;
 
   /// We keep these in case someone wants to experiment with different

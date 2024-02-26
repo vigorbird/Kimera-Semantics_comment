@@ -89,8 +89,7 @@ void MergedSemanticTsdfIntegrator::integratePointCloud(
 
   vxb::timing::Timer integrate_pcl_semantic_tsdf_timer(
       "semantic_tsdf/integrate");
-  integratePointCloud(
-      T_G_C, points_C, hash_colors, semantic_labels, freespace_points);
+  integratePointCloud(T_G_C, points_C, hash_colors, semantic_labels, freespace_points);
   integrate_pcl_semantic_tsdf_timer.Stop();
 }
 
@@ -312,14 +311,12 @@ void MergedSemanticTsdfIntegrator::integrateVoxel(
       }
     }
 
-    vxb::TsdfVoxel* voxel =
-        allocateStorageAndGetVoxelPtr(global_voxel_idx, &block, &block_idx);
+    vxb::TsdfVoxel* voxel = allocateStorageAndGetVoxelPtr(global_voxel_idx, &block, &block_idx);
     updateTsdfVoxel(origin, merged_point_G, global_voxel_idx,
                     merged_color,
                     merged_weight, voxel);
 
-    SemanticVoxel* semantic_voxel =
-        allocateStorageAndGetSemanticVoxelPtr(global_voxel_idx, &semantic_block, &semantic_block_idx);
+    SemanticVoxel* semantic_voxel = allocateStorageAndGetSemanticVoxelPtr(global_voxel_idx, &semantic_block, &semantic_block_idx);
     updateSemanticVoxel(global_voxel_idx,
                         semantic_label_frequencies,
                         &mutexes_,

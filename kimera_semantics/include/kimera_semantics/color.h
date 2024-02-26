@@ -31,10 +31,8 @@ typedef vxb::AlignedVector<HashableColor> HashableColors;
 struct ColorHasher {
   size_t operator()(const HashableColor& k) const;
 };
-typedef std::unordered_map<HashableColor, SemanticLabel, ColorHasher>
-    ColorToSemanticLabelMap;
-typedef std::unordered_map<SemanticLabel, HashableColor>
-    SemanticLabelToColorMap;
+typedef std::unordered_map<HashableColor, SemanticLabel, ColorHasher> ColorToSemanticLabelMap;
+typedef std::unordered_map<SemanticLabel, HashableColor> SemanticLabelToColorMap;//等价于 unordered_map<unit_8, HashableColor>
 
 
 // TODO(Toni): this is just to hack our way through the fact that our images

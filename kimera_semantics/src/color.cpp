@@ -66,8 +66,7 @@ SemanticLabel2Color::SemanticLabel2Color(const std::string& filename)
   color_to_semantic_label_[HashableColor::White()] = kUnknownSemanticLabelId;
 }
 
-SemanticLabel SemanticLabel2Color::getSemanticLabelFromColor(
-    const HashableColor& color) const {
+SemanticLabel SemanticLabel2Color::getSemanticLabelFromColor(const HashableColor& color) const {
   const auto& it = color_to_semantic_label_.find(color);
   if (it != color_to_semantic_label_.end()) {
     return it->second;
@@ -81,8 +80,7 @@ SemanticLabel SemanticLabel2Color::getSemanticLabelFromColor(
   }
 }
 
-HashableColor SemanticLabel2Color::getColorFromSemanticLabel(
-    const SemanticLabel& semantic_label) const {
+HashableColor SemanticLabel2Color::getColorFromSemanticLabel(const SemanticLabel& semantic_label) const {
   const auto& it = semantic_label_to_color_map_.find(semantic_label);
   if (it != semantic_label_to_color_map_.end()) {
     return it->second;

@@ -44,7 +44,8 @@
 
 namespace kimera {
 
-//严重依赖voxblox的子类
+//namespace vxb = voxblox;
+//vxb::TsdfServer的构造函数非常重要！！！！！搜索 TsdfServer构造函数
 class SemanticTsdfServer : public vxb::TsdfServer {
  public:
   SemanticTsdfServer(const ros::NodeHandle& nh,
